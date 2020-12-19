@@ -21,7 +21,16 @@ Mordhau-RCON works using two TCP socket connections. One socket is for command e
 It's easy! First, you should create a `ClientConfig` instance and fill in the required fields. Currently, the following fields are required: `Host`, `Port`, `Password`. There also the following optional fields: `BroadcastHandler`, `SendHeartbeatCommand`, `HeartbeatCommandInterval`. For more information on config fields, check out the config section.
 
 ```go
-client := mordhaurcon.NewClient(host, port, rconPassword)
+clientConfig := &mordhaurcon.ClientConfig{
+	Host:     host,
+	Port:     port,
+	Password: password,
+	// BroadcastHandler:         broadcastHandler,
+	// SendHeartbeatCommand:     true,
+	// HeartbeatCommandInterval: time.Second * 10,
+}
+
+client := mordhaurcon.NewClient(clientConfig)
 ```
 
 ### Connecting to the RCON server
