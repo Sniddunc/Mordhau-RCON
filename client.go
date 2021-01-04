@@ -248,7 +248,7 @@ func (c *Client) connectBroadcastListener(broadcastTypes []string) error {
 
 	// Subscribe to broadcast types
 	for _, broadcastType := range broadcastTypes {
-		_, err := c.execCommand(c.broadcastConn, fmt.Sprintf("listen %s start", broadcastType))
+		_, err := c.execCommand(c.broadcastConn, fmt.Sprintf("listen %s", broadcastType))
 		if err != nil {
 			return err
 		}

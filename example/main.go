@@ -16,10 +16,10 @@ var (
 
 func main() {
 	clientConfig := &mordhaurcon.ClientConfig{
-		Host:     host,
-		Port:     port,
-		Password: password,
-		// BroadcastHandler:         broadcastHandler,
+		Host:             host,
+		Port:             port,
+		Password:         password,
+		BroadcastHandler: broadcastHandler,
 		// SendHeartbeatCommand:     true,
 		// HeartbeatCommandInterval: time.Second * 10,
 	}
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// Create a string slice containing each broadcast type you wish to listen for.
-	broadcastTypes := []string{"all"}
+	broadcastTypes := []string{"allon"}
 
 	// Optional but highly recommended: create an error channel to receive errors from
 	// the ListenForBroadcasts goroutine.
