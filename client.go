@@ -160,7 +160,7 @@ func (c *Client) ListenForBroadcasts(broadcastTypes []string, errors chan error)
 		for {
 			response, err := buildPayloadFromPacket(c.broadcastConn)
 			if err != nil {
-				if err == io.EOF {
+				if err == io.EOF || err == io.ErrClosedPipe {
 					fmt.Println("Broadcast listener closed")
 
 					if c.config.AttemptReconnect {
