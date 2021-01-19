@@ -16,10 +16,11 @@ var (
 
 func main() {
 	clientConfig := &mordhaurcon.ClientConfig{
-		Host:             host,
-		Port:             port,
-		Password:         password,
-		BroadcastHandler: broadcastHandler,
+		Host:              host,
+		Port:              port,
+		Password:          password,
+		BroadcastHandler:  broadcastHandler,
+		DisconnectHandler: disconnectHandler,
 		// SendHeartbeatCommand:     true,
 		// HeartbeatCommandInterval: time.Second * 10,
 	}
@@ -40,6 +41,15 @@ func main() {
 
 	// Connect broadcast socket to the RCON server and start listening for broadcasts
 	client.ListenForBroadcasts(broadcastTypes, nil)
+
+	// Disconnect after 20 seconds
+	go func() {
+		time.Sleep(time.Second * 60)
+
+		if err := client.Disconnect(); err != nil {
+			fmt.Printf("Disconnect error: %v\n", err)
+		}
+	}()
 
 	// Enter infinite loop to keep the program running. You wouldn't want to do this in practice.
 	// Normally you would likely have a webserver or some other listening code you're running this
@@ -67,4 +77,12 @@ func main() {
 
 func broadcastHandler(broadcast string) {
 	fmt.Println("Received broadcast:", broadcast)
+}
+
+func disconnectHandler(err error, expected bool) {
+	if !expected {
+		fmt.Printf("An unexpected disconnect occurred. Error: %v\n", err)
+	} else {
+		fmt.Println("An expected disconnect occurred. All OK.")
+	}
 }

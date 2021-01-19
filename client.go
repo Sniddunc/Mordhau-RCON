@@ -20,6 +20,7 @@ var (
 )
 
 type broadcastHandlerFunc func(string)
+type disconnectHandlerFunc func(err error, expected bool)
 
 // Client is the struct which facilitates all RCON client functionality.
 // Clients should not be created manually, instead they should be created using NewClient.
@@ -39,12 +40,14 @@ type Client struct {
 // HeartbeatCommandInterval is optional (Default: 60s).
 // BroadcastHandler is optional.
 type ClientConfig struct {
-	Host                     string               // required
-	Port                     int16                // required
-	Password                 string               // required
-	SendHeartbeatCommand     bool                 // optional. default: false
-	HeartbeatCommandInterval time.Duration        // optional. default: 30 seconds
-	BroadcastHandler         broadcastHandlerFunc // optional
+	Host                     string                // required
+	Port                     int16                 // required
+	Password                 string                // required
+	SendHeartbeatCommand     bool                  // optional. default: false
+	AttemptReconnect         bool                  // optional. default: false
+	HeartbeatCommandInterval time.Duration         // optional. default: 30 seconds
+	BroadcastHandler         broadcastHandlerFunc  // optional
+	DisconnectHandler        disconnectHandlerFunc // optional
 }
 
 // NewClient is used to properly create a new instance of Client.
@@ -74,6 +77,12 @@ func NewClient(config *ClientConfig) *Client {
 // important that you make sure you only process the data you wish with your own logic within your handler.
 func (c *Client) SetBroadcastHandler(handler broadcastHandlerFunc) {
 	c.config.BroadcastHandler = handler
+}
+
+// SetDisconnectHandler accepts a disconnectHandlerFunc and updates the client's internal disconnectHandler
+// field to the value passed in. The disconnect handler is called when a socket disconnects.
+func (c *Client) SetDisconnectHandler(handler disconnectHandlerFunc) {
+	c.config.DisconnectHandler = handler
 }
 
 // SetSendHeartbeatCommand enables an occasional heartbeat command to be sent to the server to keep the broadcasting
@@ -110,6 +119,22 @@ func (c *Client) Connect() error {
 	return nil
 }
 
+func (c *Client) Disconnect() error {
+	if err := c.mainConn.Close(); err != nil {
+		return err
+	}
+
+	if err := c.broadcastConn.Close(); err != nil {
+		return err
+	}
+
+	if c.config.DisconnectHandler != nil {
+		c.config.DisconnectHandler(nil, true)
+	}
+
+	return nil
+}
+
 // ExecCommand executes a command on the RCON server. It returns the response body from the server
 // or an error if something went wrong.
 func (c *Client) ExecCommand(command string) (string, error) {
@@ -136,12 +161,23 @@ func (c *Client) ListenForBroadcasts(broadcastTypes []string, errors chan error)
 			response, err := buildPayloadFromPacket(c.broadcastConn)
 			if err != nil {
 				if err == io.EOF {
-					fmt.Println("Broadcast listener closed. Attempting to reconnect.")
-					// If EOF was read, then try reconnecting to the server.
-					err := c.connectBroadcastListener(broadcastTypes)
-					if err != nil {
-						errors <- err
+					fmt.Println("Broadcast listener closed")
+
+					if c.config.AttemptReconnect {
+						fmt.Println("Attempting to reconnect...")
+
+						// If EOF was read, then try reconnecting to the server.
+						err := c.connectBroadcastListener(broadcastTypes)
+						if err != nil {
+							errors <- err
+						}
 					}
+
+					if c.config.DisconnectHandler != nil {
+						c.config.DisconnectHandler(err, false)
+					}
+
+					return
 				} else {
 					errors <- err
 				}
