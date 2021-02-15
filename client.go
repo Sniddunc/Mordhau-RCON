@@ -46,6 +46,7 @@ type ClientConfig struct {
 	SendHeartbeatCommand     bool                  // optional. default: false
 	AttemptReconnect         bool                  // optional. default: false
 	HeartbeatCommandInterval time.Duration         // optional. default: 30 seconds
+	EnableBroadcasts         bool                  // optional
 	BroadcastHandler         broadcastHandlerFunc  // optional
 	DisconnectHandler        disconnectHandlerFunc // optional
 }
@@ -145,6 +146,11 @@ func (c *Client) ExecCommand(command string) (string, error) {
 // RCON server meant specifically for listening for broadcasts and periodically runs a command to keep the
 // connection alive.
 func (c *Client) ListenForBroadcasts(broadcastTypes []string, errors chan error) {
+	// Make sure broadcast listening is enabled
+	if !c.config.EnableBroadcasts {
+		return
+	}
+
 	// Open broadcast socket
 	err := c.connectBroadcastListener(broadcastTypes)
 	if err != nil {
