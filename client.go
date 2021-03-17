@@ -250,6 +250,25 @@ func (c *Client) execCommand(socket *net.TCPConn, command string) (string, error
 
 	response, err := sendPayload(socket, payload)
 	if err != nil {
+		if err == io.EOF || err == io.ErrClosedPipe {
+			if c.config.AttemptReconnect {
+				fmt.Println("Attempting to reconnect...")
+
+				// If EOF was read, then try reconnecting to the server.
+				err := c.Connect()
+				if err != nil {
+					fmt.Println("RCON client failed to reconnect")
+					return "", err
+				}
+			}
+
+			if c.config.DisconnectHandler != nil {
+				c.config.DisconnectHandler(err, false)
+			}
+
+			return "", nil
+		}
+
 		return "", err
 	}
 

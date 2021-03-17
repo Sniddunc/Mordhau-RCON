@@ -19,7 +19,7 @@ func main() {
 		Host:              host,
 		Port:              port,
 		Password:          password,
-		EnableBroadcasts:  false,
+		EnableBroadcasts:  true,
 		BroadcastHandler:  broadcastHandler,
 		DisconnectHandler: disconnectHandler,
 		// SendHeartbeatCommand:     true,
